@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+// -------------------------------------------------
+// MODEL 1: The Administrative User (For NextAuth)
+// -------------------------------------------------
+model AdminUser {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // We will store a hashed password here, NEVER plain text
+  createdAt DateTime @default(now())
+}
+
+// -------------------------------------------------
+// MODEL 2: The Daily Viewership Snapshot (For Cron)
+// -------------------------------------------------
+model AnimeSnapshot {
+  id          String   @id @default(uuid())
+  recordedAt  DateTime @default(now()) // Automatically tags the date/time of the cron job
+  animeId     Int      // The official ID from the AniList API
+  title       String   // Name of the show/movie
+  coverImage  String?
+  format      String   // e.g., "TV", "MOVIE", "OVA"
+  popularity  Int      // The viewership/trending metric we are tracking
+  score       Int?     // Optional: The community score
+}
