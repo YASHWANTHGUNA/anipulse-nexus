@@ -7,15 +7,15 @@ Designed with a focus on edge-network performance and zero-dependency rendering,
 ## 📸 System Interface
 
 ### Public Gateway & Credential Terminal (Bento Grid)
-![Landing Page](screenshots/landingpage.jpg)
+![Landing Page](screenshots/landingpage.png)
 
 ### Analytics Workspace & Server-Rendered SVG Trend Mapping
-![Dashboard Main](screenshots/dashboard.jpg)
-![Dashboard Filtered View](screenshots/dashboard5.jpg)
+![Dashboard Main](screenshots/dashboard.png)
+![Dashboard Filtered View](screenshots/dashboard5.png)
 
 ### Native Server-Side Pagination & Edge-Network Filtering
-![Dashboard Page 2](screenshots/dashboard3.jpg)
-![Dashboard Page 3](screenshots/dashboard4.jpg)
+![Dashboard Page 2](screenshots/dashboard3.png)
+![Dashboard Page 3](screenshots/dashboard4.png)
 
 ## 🏗️ System Architecture & Engineering Choices
 
