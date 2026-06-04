@@ -8,16 +8,16 @@ export function middleware(req) {
     const authValue = basicAuth.split(' ')[1];
     const [user, pwd] = atob(authValue).split(':');
 
-    // Check credentials against environment variables
+    // Validate keys against environment variables
     const isAdmin = user === 'admin' && pwd === process.env.ADMIN_PASSWORD;
     const isGuest = user === 'recruiter' && pwd === process.env.GUEST_PASSWORD;
 
     if (isAdmin || isGuest) {
-      return NextResponse.next(); // Let them pass directly
+      return NextResponse.next();
     }
   }
 
-  // Trigger the clean native browser prompt without any pathname rewrites
+  // Trigger browser credentials prompt without internal router rewrites
   return new NextResponse('Authentication required to view AniPulse Nexus.', {
     status: 401,
     headers: {
