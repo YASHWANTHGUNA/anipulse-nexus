@@ -1,29 +1,36 @@
 // src/app/admin/dashboard/page.js
-import { prisma } from "../../../lib/prisma";
-import FormatChart from "../../../components/FormatChart"; // <-- Import our client component
+import { prisma } from '../../../lib/prisma';
+import FormatChart from '../../../components/FormatChart';
 
 export const revalidate = 0;
 
-export default async function AdminDashboard() {
-  // 1. Securely fetch snapshots from your database
+export default async function AdminDashboard(props) {
+  // 1. Unpack incoming query search parameters safely
+  const resolvedParams = await props.searchParams;
+  const formatFilter = resolvedParams?.format;
+
+  // 2. Extract the current page from the URL, defaulting to page 1
+  const currentPage = Number(resolvedParams?.page) || 1;
+  const itemsPerPage = 10;
+  const itemSkip = (currentPage - 1) * itemsPerPage;
+
+  // 3. Fetch records dynamically using pagination offsets
   const snapshots = await prisma.animeSnapshot.findMany({
+    where: formatFilter ? { format: formatFilter } : {},
     orderBy: {
-      recordedAt: "desc",
+      recordedAt: 'desc',
     },
-    take: 10,
+    take: itemsPerPage,
+    skip: itemSkip,
   });
 
-  // 2. Data Aggregation Operations (Calculated on the Server)
-  const totalPopularity = snapshots.reduce(
-    (sum, item) => sum + item.popularity,
-    0,
-  );
+  // 4. Data Aggregations (re-calculated seamlessly based on active parameters)
+  const totalPopularity = snapshots.reduce((sum, item) => sum + item.popularity, 0);
 
   const averageScore =
     snapshots.length > 0
       ? Math.round(
-          snapshots.reduce((sum, item) => sum + item.score, 0) /
-            snapshots.length,
+          snapshots.reduce((sum, item) => sum + item.score, 0) / snapshots.length
         )
       : 0;
 
@@ -32,18 +39,21 @@ export default async function AdminDashboard() {
       ? [...snapshots].sort((a, b) => b.score - a.score)[0]
       : null;
 
-  // 3. Mathematical Coordinate Generation for the SVG Trend Chart
+  // 5. Extract Last Synchronized Time Vector from the latest record
+  const lastUpdated = snapshots[0]?.recordedAt
+    ? new Date(snapshots[0].recordedAt).toLocaleString('en-IN', { timeZone: 'IST' })
+    : 'N/A';
+
+  // 6. SVG Chart Coordinate Plotting Mapping
   const chartWidth = 500;
   const chartHeight = 120;
   const padding = 10;
-
-  let svgPoints = "";
-  let svgAreaPoints = "";
+  let svgPoints = '';
+  let svgAreaPoints = '';
 
   if (snapshots.length > 1) {
     const minScore = 50;
     const maxScore = 100;
-
     const points = snapshots.map((anime, index) => {
       const x =
         (index / (snapshots.length - 1)) * (chartWidth - padding * 2) + padding;
@@ -54,8 +64,7 @@ export default async function AdminDashboard() {
         padding;
       return { x, y };
     });
-
-    svgPoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+    svgPoints = points.map((p) => `${p.x},${p.y}`).join(' ');
     svgAreaPoints = `${points[0].x},${chartHeight} ${svgPoints} ${points[points.length - 1].x},${chartHeight}`;
   }
 
@@ -68,13 +77,13 @@ export default async function AdminDashboard() {
             <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
               AniPulse Nexus Dashboard
             </h1>
-            <p className="text-slate-400 mt-2">
-              Real-time viewership metrics and historical snapshots.
+            <p className="text-xs text-slate-400 mt-2 font-mono">
+              Database Sync Window:{' '}
+              <span className="text-cyan-400">{lastUpdated} IST</span>
             </p>
           </div>
           <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 self-start md:self-auto text-xs font-mono text-slate-400">
-            System Node:{" "}
-            <span className="text-emerald-400 font-bold">ONLINE</span>
+            System Node: <span className="text-emerald-400 font-bold">ONLINE</span>
           </div>
         </div>
 
@@ -109,7 +118,7 @@ export default async function AdminDashboard() {
               Top Critical Performer
             </p>
             <h3 className="text-lg font-bold text-white mt-2 truncate">
-              {topContender ? topContender.title : "N/A"}
+              {topContender ? topContender.title : 'N/A'}
             </h3>
             <p className="text-xs text-emerald-400 font-medium mt-1">
               Peak Score: {topContender ? topContender.score : 0}%
@@ -119,21 +128,21 @@ export default async function AdminDashboard() {
 
         {/* Visual Analytics Dual Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-          {/* Left Column: Your Custom Server SVG Chart */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">
                 Score Distribution Path
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Visualizing score variance across the top 10 trending items.
+                Visualizing score variance across active filter parameters.
               </p>
             </div>
 
             <div className="w-full bg-slate-950/60 rounded-xl p-4 border border-slate-800/50 my-4">
               {snapshots.length < 2 ? (
-                <div className="h-32 flex items-center justify-center text-sm text-slate-600">
-                  Insufficient historical data to plot variance graph.
+                <div className="h-32 flex items-center justify-center text-sm text-slate-600 font-mono text-center px-4">
+                  Insufficient data items found for category "{formatFilter}" to map
+                  vector pathing curves.
                 </div>
               ) : (
                 <div className="relative w-full h-32">
@@ -143,29 +152,12 @@ export default async function AdminDashboard() {
                     preserveAspectRatio="none"
                   >
                     <defs>
-                      <linearGradient
-                        id="chartGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#10b981"
-                          stopOpacity="0.25"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#10b981"
-                          stopOpacity="0.00"
-                        />
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.00" />
                       </linearGradient>
                     </defs>
-                    <polygon
-                      points={svgAreaPoints}
-                      fill="url(#chartGradient)"
-                    />
+                    <polygon points={svgAreaPoints} fill="url(#chartGradient)" />
                     <polyline
                       fill="none"
                       stroke="#10b981"
@@ -179,13 +171,12 @@ export default async function AdminDashboard() {
               )}
             </div>
             <div className="flex justify-between text-[10px] font-mono text-slate-500 px-1">
-              <span>High Momentum (#1)</span>
+              <span>High Momentum</span>
               <span>Stable Curve</span>
-              <span>Lower Momentum (#10)</span>
+              <span>Lower Momentum</span>
             </div>
           </div>
 
-          {/* Right Column: Interactive Client Allocation Component */}
           <div>
             <FormatChart data={snapshots} />
           </div>
@@ -193,10 +184,44 @@ export default async function AdminDashboard() {
 
         {/* Data Grid Section */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800">
+          <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-semibold text-white">
               Latest Trending Snapshot
             </h2>
+
+            {/* Native Server-Side Dropdown Filter Tabs */}
+            <div className="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+              <a
+                href="/admin/dashboard"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                  !formatFilter
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                All Formats
+              </a>
+              <a
+                href="/admin/dashboard?format=TV"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                  formatFilter === 'TV'
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                TV Series
+              </a>
+              <a
+                href="/admin/dashboard?format=ONA"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                  formatFilter === 'ONA'
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                ONA
+              </a>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -213,21 +238,15 @@ export default async function AdminDashboard() {
               <tbody className="divide-y divide-slate-800/50">
                 {snapshots.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="px-6 py-8 text-center text-slate-500"
-                    >
-                      No data found. Run the cron job to ingest data.
+                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                      No matching metrics logged under format query "{formatFilter}".
                     </td>
                   </tr>
                 ) : (
                   snapshots.map((anime, index) => (
-                    <tr
-                      key={anime.id}
-                      className="hover:bg-slate-800/50 transition-colors"
-                    >
+                    <tr key={anime.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-emerald-400">
-                        #{index + 1}
+                        #{itemSkip + index + 1}
                       </td>
                       <td className="px-6 py-4 flex items-center gap-4">
                         {anime.coverImage ? (
@@ -261,9 +280,7 @@ export default async function AdminDashboard() {
                               style={{ width: `${anime.score}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs font-bold">
-                            {anime.score}%
-                          </span>
+                          <span className="text-xs font-bold">{anime.score}%</span>
                         </div>
                       </td>
                     </tr>
@@ -271,6 +288,39 @@ export default async function AdminDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Controls Footer */}
+          <div className="flex justify-between items-center mt-6 px-2 pb-4">
+            <a
+              href={`/admin/dashboard?page=${currentPage - 1}${
+                formatFilter ? `&format=${formatFilter}` : ''
+              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-mono font-bold border transition-all ${
+                currentPage <= 1
+                  ? 'pointer-events-none opacity-30 border-slate-800 text-slate-600'
+                  : 'border-slate-800 text-slate-300 hover:bg-slate-900'
+              }`}
+            >
+              ← Previous Page
+            </a>
+
+            <span className="text-xs font-mono text-slate-500">
+              Viewing Index Bracket: Page {currentPage}
+            </span>
+
+            <a
+              href={`/admin/dashboard?page=${currentPage + 1}${
+                formatFilter ? `&format=${formatFilter}` : ''
+              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-mono font-bold border border-slate-800 text-slate-300 hover:bg-slate-900 transition-all ${
+                snapshots.length < itemsPerPage
+                  ? 'pointer-events-none opacity-30 border-slate-800 text-slate-600'
+                  : ''
+              }`}
+            >
+              Next Page →
+            </a>
           </div>
         </div>
       </div>

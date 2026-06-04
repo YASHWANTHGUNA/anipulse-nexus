@@ -8,19 +8,16 @@ export function middleware(req) {
     const authValue = basicAuth.split(' ')[1];
     const [user, pwd] = atob(authValue).split(':');
 
-    // 1. Check Admin Account (Full access)
+    // Check credentials against environment variables
     const isAdmin = user === 'admin' && pwd === process.env.ADMIN_PASSWORD;
-    
-    // 2. Check Recruiter/Guest Account (Read-only demo access)
     const isGuest = user === 'recruiter' && pwd === process.env.GUEST_PASSWORD;
 
-    // If either check passes, let them through the door!
     if (isAdmin || isGuest) {
-      return NextResponse.next();
+      return NextResponse.next(); // Let them pass directly
     }
   }
 
-  // If wrong or no credentials, trigger the browser prompt with clean instructions
+  // Trigger the clean native browser prompt without any pathname rewrites
   return new NextResponse('Authentication required to view AniPulse Nexus.', {
     status: 401,
     headers: {
