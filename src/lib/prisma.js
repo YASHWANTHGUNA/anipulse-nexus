@@ -4,16 +4,10 @@ import { PrismaClient } from '@prisma/client';
 const globalForPrisma = globalThis;
 
 export const getPrisma = () => {
-  const connectionString = process.env.DATABASE_URL;
-
   if (!globalForPrisma.prisma) {
-    // 1. Notice the strict Prisma 7.8.0 syntax: 'datasources' (plural) and 'db'
+    // 1. We use the modern, flat 'datasourceUrl' property to inject the Vercel key
     globalForPrisma.prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: connectionString || "postgresql://dummy:dummy@localhost:5432/dummy",
-        },
-      },
+      datasourceUrl: process.env.DATABASE_URL
     });
   }
   
