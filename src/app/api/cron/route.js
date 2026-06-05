@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 import { getTrendingAnime } from '../../../lib/anilist';
+export const dynamic = 'force-dynamic';
 
 // Vercel Cron Jobs strictly use GET requests
 export async function GET(request) {
