@@ -1,13 +1,20 @@
 // src/lib/prisma.js
 import { PrismaClient } from '@prisma/client';
+import { Pool } from '@neondatabase/serverless';
+import { PrismaNeon } from '@prisma/adapter-neon';
 
 const globalForPrisma = globalThis;
 
-// LAZY GETTER: This completely hides Prisma from the Vercel build engine.
-// It will only instantiate when specifically called by your API route.
 export const getPrisma = () => {
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient();
+    // 1. Initialize the Vercel-safe WebSocket pool
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    
+    // 2. Wrap it in the Prisma 7 Adapter
+    const adapter = new PrismaNeon(pool);
+    
+    // 3. Inject the adapter directly into the client constructor
+    globalForPrisma.prisma = new PrismaClient({ adapter });
   }
   return globalForPrisma.prisma;
 };
