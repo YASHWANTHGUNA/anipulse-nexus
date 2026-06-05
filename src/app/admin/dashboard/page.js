@@ -2,7 +2,7 @@
 import { getPrisma } from "../../../lib/prisma";
 import FormatChart from "../../../components/FormatChart";
 
-export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard(props) {
   const prisma = getPrisma();
