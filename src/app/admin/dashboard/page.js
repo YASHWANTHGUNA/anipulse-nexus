@@ -1,10 +1,11 @@
 // src/app/admin/dashboard/page.js
-import { prisma } from "../../../lib/prisma";
+import { getPrisma } from "../../../lib/prisma";
 import FormatChart from "../../../components/FormatChart";
 
 export const revalidate = 0;
 
 export default async function AdminDashboard(props) {
+  const prisma = getPrisma();
   const resolvedParams = await props.searchParams;
   const formatFilter = resolvedParams?.format;
 
