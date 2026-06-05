@@ -1,36 +1,39 @@
 // src/app/api/cron/route.js
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../lib/prisma';
+import { getPrisma } from '../../../lib/prisma'; // Import the lazy getter
 import { getTrendingAnime } from '../../../lib/anilist';
+
 export const dynamic = 'force-dynamic';
 
-// Vercel Cron Jobs strictly use GET requests
 export async function GET(request) {
   try {
-    // 1. Security Check: Prevent random people on the internet from triggering your database
+    // 1. Security Check
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Extract: Fetch the live data from our existing AniList pipeline
+    // 2. Safely initialize Prisma ONLY when the API route actually runs
+    const prisma = getPrisma();
+
+    // 3. Extract
     const trendingData = await getTrendingAnime();
 
     if (!trendingData || trendingData.length === 0) {
       return NextResponse.json({ error: 'Failed to fetch AniList data' }, { status: 500 });
     }
 
-    // 3. Transform: Map the AniList JSON into our Prisma database structure
+    // 4. Transform
     const snapshotsToInsert = trendingData.map((anime) => ({
-            animeId: anime.id,
-          title: anime.title.english || anime.title.romaji,
-             coverImage: anime.coverImage?.large || null, // <-- Capturing the media URL safely
-             format: anime.format || 'UNKNOWN',
-                 popularity: anime.popularity,
-             score: anime.averageScore || 0,
-          }));
+      animeId: anime.id,
+      title: anime.title?.english || anime.title?.romaji || 'Unknown Title',
+      coverImage: anime.coverImage?.large || null,
+      format: anime.format || 'UNKNOWN',
+      popularity: anime.popularity || 0,
+      score: anime.averageScore || 0,
+    }));
 
-    // 4. Load: Bulk insert all 10 records into the Neon database at once
+    // 5. Load
     await prisma.animeSnapshot.createMany({
       data: snapshotsToInsert,
     });
@@ -39,6 +42,6 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Cron Job Failed:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }

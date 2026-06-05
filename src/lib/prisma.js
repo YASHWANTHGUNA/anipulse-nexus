@@ -1,10 +1,13 @@
 // src/lib/prisma.js
-// src/lib/prisma.js
 import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis;
 
-// Initialize standard Prisma Client without fragile native adapters
-export const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// LAZY GETTER: This completely hides Prisma from the Vercel build engine.
+// It will only instantiate when specifically called by your API route.
+export const getPrisma = () => {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+};
