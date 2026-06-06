@@ -1,11 +1,19 @@
 // src/app/admin/dashboard/page.js
-import { getPrisma } from "../../../lib/prisma";
+import { prisma } from "../../../lib/prisma";
 import FormatChart from "../../../components/FormatChart";
 
-export const dynamic = 'force-dynamic';
+
+// export const dynamic = 'force-dynamic';
+// const prisma = new PrismaClient({
+//   datasources: {
+//     db: {
+//       url: "postgresql://neondb_owner:npg_tEznC0xWIpU4@ep-holy-brook-apqwtkul.c-7.us-east-1.aws.neon.tech/neondb?sslmode=verify-full&channel_binding=require",
+//     },
+//   },
+// });
 
 export default async function AdminDashboard(props) {
-  const prisma = getPrisma();
+  // const prisma = getPrisma();
   const resolvedParams = await props.searchParams;
   const formatFilter = resolvedParams?.format;
 
