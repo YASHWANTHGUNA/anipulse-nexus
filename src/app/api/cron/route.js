@@ -1,6 +1,6 @@
 // src/app/api/cron/route.js
 import { NextResponse } from 'next/server';
-import { getPrisma } from '../../../lib/prisma'; // Import the lazy getter
+import { prisma } from '../../../lib/prisma';
 import { getTrendingAnime } from '../../../lib/anilist';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function GET(request) {
     }
 
     // 2. Safely initialize Prisma ONLY when the API route actually runs
-    const prisma = getPrisma();
+    
 
     // 3. Extract
     const trendingData = await getTrendingAnime();
