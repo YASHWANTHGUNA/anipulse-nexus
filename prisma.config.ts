@@ -7,4 +7,10 @@ import { PrismaNeon } from '@prisma/adapter-neon';
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
+  datasources: {
+    db: {
+      provider: 'postgresql',
+      connectionString: process.env.DATABASE_URL,
+    },
+  },
 });
